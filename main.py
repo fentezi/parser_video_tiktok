@@ -3,10 +3,6 @@ import re
 
 from TikTokApi import TikTokApi
 
-msTokens = [
-    'IRAbv5xYcqOSXD98wZ-nCZ_nynOU5_Dx-6b38zskHZ-b6__HgGHwX2_nMHBW-l9C2ftR1EkuUXHcnPQ3ut4s2KZSNHBgOOMR-gQTCOqfJ0LM6APAAbXWfEWo1KEGfnXmMrFkAOUOjhQmqkA=',
-]
-
 
 async def fetch_video_max_view(api: TikTokApi, username: str,
                                video_count: int,
@@ -42,8 +38,8 @@ async def info_videos(file_url: str,
 
     async with (TikTokApi() as api):
 
-        await api.create_sessions(ms_tokens=msTokens,
-                                  num_sessions=3, sleep_after=3)
+        await api.create_sessions(
+            num_sessions=3, sleep_after=3)
         result = []
         with open(file_url, 'r', encoding='utf8') as file:
             for line in file.readlines():
@@ -70,5 +66,3 @@ async def info_videos(file_url: str,
                     return e
 
         return sorted(result, key=lambda x: x[2], reverse=True)
-
-

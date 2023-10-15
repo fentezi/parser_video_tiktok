@@ -18,33 +18,46 @@ def random_sleep():
 
 
 def find_captcha(driver):
-    full_img_captcha = driver.find_element("xpath", '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
-        'src')
-    small_img_captcha = driver.find_element("xpath",
-                                            '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute('src')
-    action_type = "tiktokcircle"
-    user_api_key = "532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN"
+    try:
+        time.sleep(5)
+        while driver.find_element(By.XPATH,
+                                  '//*[@id="captcha_container"]/div').is_displayed() == True:
+            time.sleep(3)
+            full_img_captcha = driver.find_element("xpath",
+                                                   '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
+                'src')
+            small_img_captcha = driver.find_element("xpath",
+                                                    '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
+                'src')
+            action_type = "tiktokcircle"
+            user_api_key = "532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN"
 
-    multipart_form_data = {
-        'FULL_IMG_CAPTCHA': (None, full_img_captcha),
-        'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
-        'ACTION': (None, action_type),
-        'USER_KEY': (None, user_api_key)
-    }
-    solve_captcha = requests.post('https://captcha.ocasoft.com/api/res.php', data=multipart_form_data)
-    captcha = driver.find_element("xpath",
-                                  '//*[@id="secsdk-captcha-drag-wrapper"]/div[2]')
-    solve_success = solve_captcha.content
-    data = json.loads(solve_success)
-    number = int(data.get("cordinate_x"))
-    actions = ActionChains(driver)
-    time.sleep(0.1)
-    actions.move_to_element(captcha).perform()
-    actions.click_and_hold(captcha).perform()
-    for _ in range(number):
-        time.sleep(0.001)
-        actions.move_by_offset(xoffset=1, yoffset=0).perform()
-    actions.release().perform()
+            multipart_form_data = {
+                'FULL_IMG_CAPTCHA': (None, full_img_captcha),
+                'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
+                'ACTION': (None, action_type),
+                'USER_KEY': (None, user_api_key)
+            }
+            solve_captcha = requests.post('https://captcha.ocasoft.com/api/res.php', files=multipart_form_data)
+            captcha = driver.find_element("xpath",
+                                          '//*[@id="secsdk-captcha-drag-wrapper"]/div[2]')
+            data = {}
+            if solve_captcha.content:
+                data = json.loads(solve_captcha.content)
+            number = int(data.get("cordinate_x"))
+            actions = ActionChains(driver)
+            time.sleep(0.1)
+            actions.move_to_element(captcha).perform()
+            actions.click_and_hold(captcha).perform()
+            for _ in range(number):
+                time.sleep(0.001)
+                actions.move_by_offset(xoffset=1, yoffset=0).perform()
+            actions.release().perform()
+
+            time.sleep(3)
+
+    except NoSuchElementException:
+        pass
 
 
 def login(driver, username: str, password: str):
@@ -84,19 +97,16 @@ def login(driver, username: str, password: str):
         WebDriverWait(driver, 3).until(EC.presence_of_element_located(
             (By.XPATH, submit_button_xpath)))
     except NoSuchElementException as e:
-        raise ValueError
+        raise ValueError(e)
 
     submit_button = driver.find_element("xpath", submit_button_xpath)
     submit_button.click()
     logging.info("Button clicked!")
-    time.sleep(5)
+    time.sleep(3)
 
-    try:
-        find_captcha(driver=driver)
-    except NoSuchElementException:
-        logging.info("Not found captcha")
+    find_captcha(driver)
 
-    time.sleep(5)
+    time.sleep(3)
 
     try:
         error = driver.find_element('xpath',

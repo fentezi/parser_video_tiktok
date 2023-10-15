@@ -22,7 +22,9 @@ def get_text_description():
 
 def posting_video(session_id: str, bot):
     try:
-        upload_delay = 60
+        upload_delay = 30
+        ty_res = time.gmtime(upload_delay)
+
         video_folder = 'video'
         video_files = os.listdir(video_folder)
         video_count = len(video_files)
@@ -40,12 +42,12 @@ def posting_video(session_id: str, bot):
                     break
                 else:
                     bot.send_message(chat_id='1944331333',
-                                     text=f'{video_files[index]}: {video_info}. Следующая публикация через {upload_delay} c')
+                                     text=f'{video_files[index]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", ty_res)}')
                     time.sleep(upload_delay)
         else:
             raise FolderIsEmpty(message=video_folder)
-    except Exception:
-        raise ValueError
+    except Exception as e:
+        raise Exception(e)
     else:
         logging.info('All videos published')
         bot.send_message(chat_id='1944331333', text='Все видео опубликованы!')

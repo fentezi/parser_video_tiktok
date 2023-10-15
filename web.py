@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 import typing
 
 import telebot
@@ -34,18 +35,13 @@ async def parser_video(request: Request):
     return templates.TemplateResponse('parser.html', {'request': request})
 
 
-@app.get('/upload_video', response_class=HTMLResponse)
-async def upload_video(request: Request):
-    return templates.TemplateResponse('video.html', {'request': request})
-
-
-@app.post('/upload_process', response_class=JSONResponse)
-async def upload_process(request: Request, username: str = Form(),
-                         password: str = Form()):
+@app.get('/upload_video', response_class=JSONResponse)
+async def upload_process(request: Request):
     # Настройка Chrome
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
+
     driver = uc.Chrome(use_subprocess=True, headless=False)
 
     # Настройка stealth
@@ -56,16 +52,24 @@ async def upload_process(request: Request, username: str = Form(),
             webgl_vendor="Intel Inc.",
             renderer="Intel Iris OpenGL Engine",
             fix_hairline=True)
-    try:
-        session_id = login(driver, username, password)
-    except Exception as e:
-        bot.send_message(chat_id='1944331333', text=f'Ошибка: {e}')
-        logging.error('Error: {}'.format(str(e)))
-    else:
-        posting_video(session_id, bot)
-    finally:
-        driver.quit()
-        bot.stop_polling()
+    with open("accounts.txt", "r") as file:
+        lines = file.read().splitlines()
+
+    for line in lines:
+        username, password = line.strip().split(':')
+        try:
+            session_id = login(driver, username, password)
+        except Exception as e:
+            bot.send_message(chat_id='1944331333', text=f'Ошибка: {e}')
+            logging.error('Error: {}'.format(str(e)))
+        else:
+            bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
+            posting_video(session_id, bot)
+            driver.get("https://www.tiktok.com/logout?redirect_url=https%3A%2F%2Fwww.tiktok.com%2Fru-RU%2F")
+        finally:
+            bot.stop_polling()
+        time.sleep(3)
+    driver.quit()
 
 
 async def process_uploaded_file(file: UploadFile,
