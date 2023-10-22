@@ -11,6 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 logging.basicConfig(filename="login.app", filemode="w+", level=logging.INFO)
 
+user = ""
+passw = ""
+
 
 def random_sleep():
     sleep_time = random.uniform(0.1, 2.0)
@@ -18,15 +21,14 @@ def random_sleep():
 
 
 def find_captcha(driver):
+    time.sleep(3)
     try:
-        time.sleep(5)
         while driver.find_element(By.XPATH,
                                   '//*[@id="captcha_container"]/div').is_displayed() == True:
-            time.sleep(3)
-            full_img_captcha = driver.find_element("xpath",
+            full_img_captcha = driver.find_element(By.XPATH,
                                                    '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
                 'src')
-            small_img_captcha = driver.find_element("xpath",
+            small_img_captcha = driver.find_element(By.XPATH,
                                                     '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
                 'src')
             action_type = "tiktokcircle"
@@ -47,20 +49,25 @@ def find_captcha(driver):
             number = int(data.get("cordinate_x"))
             actions = ActionChains(driver)
             time.sleep(0.1)
-            actions.move_to_element(captcha).perform()
             actions.click_and_hold(captcha).perform()
             for _ in range(number):
                 time.sleep(0.001)
                 actions.move_by_offset(xoffset=1, yoffset=0).perform()
             actions.release().perform()
-
-            time.sleep(3)
-
+    except json.JSONDecodeError:
+        print("Error")
+        login(driver, user, passw)
     except NoSuchElementException:
         pass
 
+    time.sleep(3)
+
 
 def login(driver, username: str, password: str):
+    global user, passw
+    user = username
+    passw = password
+
     login_url = "https://www.tiktok.com/login/phone-or-email/email"
     username_xpath = "//input[@placeholder='Email or username']"
     password_xpath = "//input[@placeholder='Password']"
@@ -106,7 +113,7 @@ def login(driver, username: str, password: str):
 
     find_captcha(driver)
 
-    time.sleep(3)
+    time.sleep(5)
 
     try:
         error = driver.find_element('xpath',
@@ -114,7 +121,10 @@ def login(driver, username: str, password: str):
         logging.error("Authorisation Error: ", error)
         raise Exception(error)
     except NoSuchElementException:
-        session_id = driver.get_cookie('sessionid').get('value')
-        logging.info(f"You are logged in: {session_id}")
-
-        return session_id
+        try:
+            session_id = driver.get_cookie('sessionid').get('value')
+            logging.info(f"You are logged in: {session_id}")
+        except:
+            login(driver, username, password)
+        else:
+            return session_id

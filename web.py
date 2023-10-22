@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import time
 import typing
 
@@ -55,21 +56,31 @@ async def upload_process(request: Request):
     with open("accounts.txt", "r") as file:
         lines = file.read().splitlines()
 
-    for line in lines:
-        username, password = line.strip().split(':')
-        try:
-            session_id = login(driver, username, password)
-        except Exception as e:
-            bot.send_message(chat_id='1944331333', text=f'Ошибка: {e}')
-            logging.error('Error: {}'.format(str(e)))
+    while True:
+        if len(os.listdir('video')) == 0:
+            driver.quit()
+            bot.send_message(chat_id='1944331333', text='Папка с видео пустая.')
+            break
         else:
-            bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
-            posting_video(session_id, bot)
-            driver.get("https://www.tiktok.com/logout?redirect_url=https%3A%2F%2Fwww.tiktok.com%2Fru-RU%2F")
-        finally:
-            bot.stop_polling()
-        time.sleep(3)
-    driver.quit()
+            for line in lines:
+                username, password = line.strip().split(':')
+                sleep_time = random.uniform(3600, 28800)
+                try:
+                    session_id = login(driver, username, password)
+                except Exception as e:
+                    bot.send_message(chat_id='1944331333', text=f'Ошибка: {username}, {e}')
+                    logging.error('Error: {}'.format(str(e)))
+                else:
+                    bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
+                    posting_video(session_id, bot, sleep_time)
+                    if len(os.listdir('video')) == 0:
+                        driver.quit()
+                        bot.send_message(chat_id='1944331333', text='Папка с видео пустая.')
+                        break
+                    time.sleep(sleep_time)
+                    driver.get("https://www.tiktok.com/logout?redirect_url=https%3A%2F%2Fwww.tiktok.com%2Fru-RU%2F")
+                finally:
+                    bot.stop_polling()
 
 
 async def process_uploaded_file(file: UploadFile,
