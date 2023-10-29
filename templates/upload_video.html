@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Video</title>
+    <style>
+        body {
+            background-image: url("https://html5book.ru/wp-content/uploads/2015/07/background39.png");
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="file"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 5vh; /* Это устанавливает высоту контейнера на всю высоту видимой области страницы */
+        }
+
+        .red-button {
+            background-color: red; /* Задает красный цвет фона кнопке */
+            color: white; /* Задает белый цвет текста на кнопке */
+            padding: 10px 20px; /* Можете настроить размеры кнопки по своему усмотрению */
+            border: none; /* Убирает границу у кнопки, если она была */
+        }
+    </style>
+</head>
+<body>
+<form method="post" action="/video_process">
+    <p>
+        <label for="number1">От:</label>
+        <input name="number1" type="number" id="number1" required>
+    </p>
+    <p>
+        <label for="number2">До:</label>
+        <input name="number2" type="number" id="number2" required>
+    </p>
+    <p>
+        <button type="submit">Старт</button>
+    </p>
+</form>
+<p class="centered">
+    <a href="/stop_video_processing">
+        <button class="red-button">СТОП!</button>
+    </a>
+</p>
+</body>
+</html>

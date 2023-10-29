@@ -3,6 +3,10 @@ import re
 
 from TikTokApi import TikTokApi
 
+ms_tokens = [
+    'mZ6R-dP4XEbRlthkD97XGYHw4p3r7ZVUN7VrV3llMnbWcSARKApy24l-kOBAoswUqqLCpmVMz8nccJ3NWIWsavPCJGfL6SuuIkRC2Vw1jj9NcpggTuJVXiuirHvkT6b4mQY-zgH_HE2OxG4=',
+]
+
 
 async def fetch_video_max_view(api: TikTokApi, username: str,
                                video_count: int,
@@ -39,7 +43,7 @@ async def info_videos(file_url: str,
     async with (TikTokApi() as api):
 
         await api.create_sessions(
-            num_sessions=3, sleep_after=3)
+            num_sessions=3, sleep_after=3, ms_tokens=ms_tokens)
         result = []
         with open(file_url, 'r', encoding='utf8') as file:
             for line in file.readlines():
@@ -66,3 +70,6 @@ async def info_videos(file_url: str,
                     return e
 
         return sorted(result, key=lambda x: x[2], reverse=True)
+
+
+print(asyncio.run(info_videos("temp_uploads/account.txt", 5)))

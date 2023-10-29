@@ -216,7 +216,7 @@ def uploadVideo(session_id, video, title, tags, schedule_time=0, verbose=True):
         "poster_delay": "0",
         "text": text,
         "text_extra": json.dumps(text_extra),
-        "allow_comment": "1",
+        "allow_comment": "0",
         "allow_duet": "0",
         "allow_stitch": "0",
         "sound_exemption": "0",

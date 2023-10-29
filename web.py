@@ -1,7 +1,7 @@
+import asyncio
 import logging
 import os
 import random
-import time
 import typing
 
 import telebot
@@ -38,11 +38,18 @@ async def parser_video(request: Request):
 
 @app.get('/upload_video', response_class=JSONResponse)
 async def upload_process(request: Request):
-    # Настройка Chrome
+    return templates.TemplateResponse('upload_video.html', {'request': request})
+
+
+async def process_video(username: str,
+                        password: str,
+                        proxy: str,
+                        number1: int,
+                        number2: int):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-
+    options.add_argument("--proxy-server=%s" % proxy)
     driver = uc.Chrome(use_subprocess=True, headless=False)
 
     # Настройка stealth
@@ -53,34 +60,63 @@ async def upload_process(request: Request):
             webgl_vendor="Intel Inc.",
             renderer="Intel Iris OpenGL Engine",
             fix_hairline=True)
-    with open("accounts.txt", "r") as file:
-        lines = file.read().splitlines()
 
-    while True:
+    sleep_time = random.uniform(number1 * 60, number2 * 60)
+    try:
+        if stop_tasks:
+            bot.send_message(chat_id='1944331333', text='Загрузка остановлена')
+            return
+        session_id = await login(driver, username, password)
+    except ValueError as e:
+        logging.error('Error: {}'.format(str(e)))
+        bot.send_message(chat_id='1944331333', text=f'Ошибка: {username}, {e}')
+    except Exception as e:
+        logging.error('Error: {}'.format(str(e)))
+    else:
+        bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
+        await posting_video(session_id, bot, sleep_time)
         if len(os.listdir('video')) == 0:
             driver.quit()
+            return False
+        await asyncio.sleep(sleep_time)
+    finally:
+        bot.stop_polling()
+        driver.quit()
+
+
+stop_tasks = None
+
+
+@app.post("/video_process")
+async def get_video_process(request: Request, number1: int = Form(),
+                            number2: int = Form()):
+    global stop_tasks
+    stop_tasks = False
+    with open("accounts.txt", "r") as file:
+        lines = file.read().splitlines()
+    while not stop_tasks:
+        if len(os.listdir('video')) == 0:
             bot.send_message(chat_id='1944331333', text='Папка с видео пустая.')
             break
         else:
             for line in lines:
-                username, password = line.strip().split(':')
-                sleep_time = random.uniform(3600, 28800)
-                try:
-                    session_id = login(driver, username, password)
-                except Exception as e:
-                    bot.send_message(chat_id='1944331333', text=f'Ошибка: {username}, {e}')
-                    logging.error('Error: {}'.format(str(e)))
-                else:
-                    bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
-                    posting_video(session_id, bot, sleep_time)
-                    if len(os.listdir('video')) == 0:
-                        driver.quit()
-                        bot.send_message(chat_id='1944331333', text='Папка с видео пустая.')
-                        break
-                    time.sleep(sleep_time)
-                    driver.get("https://www.tiktok.com/logout?redirect_url=https%3A%2F%2Fwww.tiktok.com%2Fru-RU%2F")
-                finally:
-                    bot.stop_polling()
+                if stop_tasks:
+                    bot.send_message(chat_id='1944331333', text='Загрузка остановлена')
+                    break
+                elif len(os.listdir('video')) == 0:
+                    break
+                username, password, proxy = line.strip().split(';')
+                await process_video(username, password, proxy, number1, number2)
+
+    return {"message": "upload successful"}
+
+
+@app.get("/stop_video_processing")
+async def stop_video_processing_endpoint():
+    global stop_tasks
+    stop_tasks = True
+
+    return RedirectResponse("/upload_video")
 
 
 async def process_uploaded_file(file: UploadFile,
@@ -123,4 +159,4 @@ async def result(request: Request, file: UploadFile = Form(),
 
 
 if __name__ == '__main__':
-    uvicorn.run(app)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
