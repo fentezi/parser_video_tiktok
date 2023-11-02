@@ -25,7 +25,8 @@ async def posting_video(session_id: str, bot: Any, sleep_time: float):
                                  tags=[])
         bot.send_message(chat_id='1944331333',
                          text=f'{video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин')
-        logging.info(f'{video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин')
+        logging.info(
+            f'{video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин')
         os.remove(f'{video_folder}/{video_files[0]}')
     elif video_count == 1:
         description = get_text_description()

@@ -5,7 +5,6 @@ import random
 import typing
 
 import telebot
-import undetected_chromedriver as uc
 import uvicorn
 from fastapi import FastAPI, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -41,47 +40,50 @@ async def upload_process(request: Request):
     return templates.TemplateResponse('upload_video.html', {'request': request})
 
 
-async def process_video(username: str,
-                        password: str,
-                        proxy: str,
-                        number1: int,
-                        number2: int):
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument("--proxy-server=%s" % proxy)
-    driver = uc.Chrome(use_subprocess=True, headless=False)
+async def process_video():
+    with open("accounts.txt", "r", encoding="utf-8") as file:
+        lines = file.read().splitlines()
+    session_ids = dict()
+    drivers = []
+    while len(session_ids) != len(lines):
+        for line in lines:
+            username, password = line.strip().split(';')
+            if username not in session_ids.keys():
+                options = webdriver.ChromeOptions()
+                options.add_argument("--no-sandbox")
+                options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                options.add_experimental_option('useAutomationExtension', False)
+                options.add_experimental_option("detach", True)
+                options.add_argument("--headless")
+                driver = webdriver.Chrome(options=options)
+                stealth(driver,
+                        languages=["en-US", "en"],
+                        vendor="Google Inc.",
+                        platform="Win64",
+                        webgl_vendor="Intel Inc.",
+                        renderer="Intel Iris OpenGL Engine",
+                        fix_hairline=True)
+                driver.get("https://www.tiktok.com/login/phone-or-email/email")
+                try:
+                    logging.info("Браузер открыт")
+                    session_id = await login(driver=driver,
+                                             username=username,
+                                             password=password)
+                except TypeError as e:
+                    logging.error(e)
+                    driver.quit()
+                except ValueError as e:
+                    logging.error(e)
+                    bot.send_message(chat_id="1944331333",
+                                     text=f"{username}: {e}")
+                    driver.quit()
 
-    # Настройка stealth
-    stealth(driver,
-            languages=["en-US", "en"],
-            vendor="Google Inc.",
-            platform="Win64",
-            webgl_vendor="Intel Inc.",
-            renderer="Intel Iris OpenGL Engine",
-            fix_hairline=True)
-
-    sleep_time = random.uniform(number1 * 60, number2 * 60)
-    try:
-        if stop_tasks:
-            bot.send_message(chat_id='1944331333', text='Загрузка остановлена')
-            return
-        session_id = await login(driver, username, password)
-    except ValueError as e:
-        logging.error('Error: {}'.format(str(e)))
-        bot.send_message(chat_id='1944331333', text=f'Ошибка: {username}, {e}')
-    except Exception as e:
-        logging.error('Error: {}'.format(str(e)))
-    else:
-        bot.send_message(chat_id='1944331333', text=f'Пользователь {username} авторизован!')
-        await posting_video(session_id, bot, sleep_time)
-        if len(os.listdir('video')) == 0:
-            driver.quit()
-            return False
-        await asyncio.sleep(sleep_time)
-    finally:
-        bot.stop_polling()
-        driver.quit()
+                else:
+                    session_ids[username] = session_id
+                    drivers.append(driver)
+                    bot.send_message(chat_id="1944331333",
+                                     text=f"Пользователь {username} авторизован!")
+    return session_ids, drivers
 
 
 stop_tasks = None
@@ -92,21 +94,32 @@ async def get_video_process(request: Request, number1: int = Form(),
                             number2: int = Form()):
     global stop_tasks
     stop_tasks = False
-    with open("accounts.txt", "r") as file:
-        lines = file.read().splitlines()
+    session_ids, drivers = await process_video()
     while not stop_tasks:
         if len(os.listdir('video')) == 0:
             bot.send_message(chat_id='1944331333', text='Папка с видео пустая.')
             break
         else:
-            for line in lines:
+            for id in session_ids.values():
+                sleep_time = random.uniform(number1 * 60, number2 * 60)
                 if stop_tasks:
-                    bot.send_message(chat_id='1944331333', text='Загрузка остановлена')
+                    bot.send_message(chat_id='1944331333',
+                                     text='Загрузка остановлена')
                     break
-                elif len(os.listdir('video')) == 0:
+                elif len(os.listdir('video')) == 1:
+                    await posting_video(session_id=id,
+                                        bot=bot,
+                                        sleep_time=0)
                     break
-                username, password, proxy = line.strip().split(';')
-                await process_video(username, password, proxy, number1, number2)
+                else:
+                    await posting_video(session_id=id,
+                                        bot=bot,
+                                        sleep_time=sleep_time)
+                    await asyncio.sleep(sleep_time)
+
+    for driver in drivers:
+        await asyncio.sleep(1)
+        driver.quit()
 
     return {"message": "upload successful"}
 

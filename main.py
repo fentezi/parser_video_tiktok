@@ -70,6 +70,3 @@ async def info_videos(file_url: str,
                     return e
 
         return sorted(result, key=lambda x: x[2], reverse=True)
-
-
-print(asyncio.run(info_videos("temp_uploads/account.txt", 5)))

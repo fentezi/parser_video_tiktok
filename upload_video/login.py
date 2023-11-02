@@ -24,6 +24,7 @@ async def solve_captcha_async(multipart_form_data: dict):
         async with session.post(url=url, data=multipart_form_data) as response:
             if response.status == 200:
                 data = await response.json(content_type='text/html')
+                logging.info(data)
                 return data
             else:
                 pass
@@ -34,31 +35,20 @@ async def slide_button(data, driver):
                                   '//*[@id="secsdk-captcha-drag-wrapper"]/div[2]')
     number = int(data.get("cordinate_x"))
     actions = ActionChains(driver)
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     actions.click_and_hold(captcha).perform()
     for _ in range(number):
         actions.move_by_offset(xoffset=1, yoffset=0).perform()
     actions.release().perform()
-    await asyncio.sleep(3)
 
 
 async def find_captcha(driver):
-    i = 0
+    await asyncio.sleep(2)
     try:
-        while driver.find_element(By.XPATH,
-                                  '//*[@id="captcha_container"]/div').is_displayed():
-            await asyncio.sleep(1)
-            logging.info(i)
-            if i > 3 & i < 6:
-                full_img_captcha = driver.find_element(By.XPATH,
-                                                       '/img').get_attribute(
-                    'src')
-                small_img_captcha = driver.find_element(By.XPATH,
-                                                        '/img').get_attribute(
-                    'src')
-                action_type = "tiktokpuzzle"
-
-            elif i <= 3:
+        while driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
+            await asyncio.sleep(3)
+            if driver.find_element(By.XPATH,
+                                   '//*[@id="captcha_container"]/div/div[1]/div[2]/div').text == "Drag the slider to fit the puzzle":
                 full_img_captcha = driver.find_element(By.XPATH,
                                                        '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
                     'src')
@@ -66,37 +56,34 @@ async def find_captcha(driver):
                                                         '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
                     'src')
                 action_type = "tiktokcircle"
+                user_api_key = "532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN"
+                multipart_form_data = {
+                    'FULL_IMG_CAPTCHA': (None, full_img_captcha),
+                    'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
+                    'ACTION': (None, action_type),
+                    'USER_KEY': (None, user_api_key)
+                }
+                data = await solve_captcha_async(multipart_form_data)
+                await slide_button(data=data, driver=driver)
             else:
+                logging.info("Another kind captcha")
                 raise TypeError
-            i += 1
-            user_api_key = "532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN"
-            multipart_form_data = {
-                'FULL_IMG_CAPTCHA': (None, full_img_captcha),
-                'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
-                'ACTION': (None, action_type),
-                'USER_KEY': (None, user_api_key)
-            }
-            data = await solve_captcha_async(multipart_form_data)
-            await slide_button(data=data, driver=driver)
         else:
-            logging.info("Captcha solved!")
+            pass
 
     except json.JSONDecodeError:
-        driver.find_element(By.XPATH,
-                            '//*[@id="captcha_container"]/div/div[4]/div/a[1]').click()
+        driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div/div[4]/div/a[1]').click()
         await find_captcha(driver)
     except NoSuchElementException:
         pass
 
 
 async def login(driver, username: str, password: str):
-    login_url = "https://www.tiktok.com/login/phone-or-email/email"
     username_xpath = "//input[@placeholder='Email or username']"
     password_xpath = "//input[@placeholder='Password']"
     submit_button_xpath = "//button[@type='submit']"
     click_go_email = '/html/body/div[1]/div/div[3]/div[1]/div/div[1]/div/div[1]/button[3]'
 
-    driver.get(login_url)
     await asyncio.sleep(3)
     try:
         text_email = driver.find_element("xpath", click_go_email).text
@@ -128,15 +115,16 @@ async def login(driver, username: str, password: str):
     except NoSuchElementException as e:
         raise TypeError(e)
 
-    try:
-        submit_button = driver.find_element("xpath", submit_button_xpath)
-        submit_button.click()
-    except NoSuchElementException as e:
-        raise TypeError(e)
-    logging.info("Button clicked!")
-    await asyncio.sleep(3)
+    submit_button = driver.find_element("xpath", submit_button_xpath)
+    submit_button.click()
 
-    await find_captcha(driver)
+    logging.info("Button clicked!")
+    await asyncio.sleep(2)
+
+    try:
+        await find_captcha(driver)
+    except TypeError:
+        raise TypeError
 
     await asyncio.sleep(5)
 
@@ -151,6 +139,7 @@ async def login(driver, username: str, password: str):
             logging.info(f"You are logged in: {session_id}")
         except Exception as e:
             logging.error(e)
-            raise TypeError
+            driver.refresh()
+            await login(driver, username, password)
         else:
             return session_id
