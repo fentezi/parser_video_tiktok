@@ -56,16 +56,18 @@ async def process_video():
                 options.add_experimental_option("detach", True)
                 options.add_argument("--headless")
                 driver = webdriver.Chrome(options=options)
-                stealth(driver,
-                        languages=["en-US", "en"],
-                        vendor="Google Inc.",
-                        platform="Win64",
-                        webgl_vendor="Intel Inc.",
-                        renderer="Intel Iris OpenGL Engine",
-                        fix_hairline=True)
+                stealth(
+                    driver,
+                    languages=["en-US", "en"],
+                    vendor="Google Inc.",
+                    platform="Linux",
+                    webgl_vendor="Intel Inc.",
+                    renderer="Intel Iris OpenGL Engine",
+                    fix_hairline=True,
+                )
                 driver.get("https://www.tiktok.com/login/phone-or-email/email")
                 try:
-                    logging.info("Браузер открыт")
+                    logging.info("Browser open")
                     session_id = await login(driver=driver,
                                              username=username,
                                              password=password)
@@ -83,6 +85,7 @@ async def process_video():
                     drivers.append(driver)
                     bot.send_message(chat_id="1944331333",
                                      text=f"Пользователь {username} авторизован!")
+                await asyncio.sleep(5)
     return session_ids, drivers
 
 
@@ -120,6 +123,9 @@ async def get_video_process(request: Request, number1: int = Form(),
     for driver in drivers:
         await asyncio.sleep(1)
         driver.quit()
+
+    # pid = os.popen("pgrep chrome").read()
+    # os.system("kill -KILL " + pid)
 
     return {"message": "upload successful"}
 

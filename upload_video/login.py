@@ -26,8 +26,6 @@ async def solve_captcha_async(multipart_form_data: dict):
                 data = await response.json(content_type='text/html')
                 logging.info(data)
                 return data
-            else:
-                pass
 
 
 async def slide_button(data, driver):
@@ -43,7 +41,7 @@ async def slide_button(data, driver):
 
 
 async def find_captcha(driver):
-    await asyncio.sleep(2)
+    await asyncio.sleep(5)
     try:
         while driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
             await asyncio.sleep(3)
@@ -65,11 +63,28 @@ async def find_captcha(driver):
                 }
                 data = await solve_captcha_async(multipart_form_data)
                 await slide_button(data=data, driver=driver)
+            elif driver.find_element(By.XPATH,
+                                     '//*[@id="captcha_container"]/div/div[1]/div[2]/div') == "Verify to continue:":
+                full_img_captcha = driver.find_element(By.XPATH,
+                                                       '//*[@id="captcha-verify-image"]').get_attribute('src')
+                small_img_captcha = driver.find_element(By.XPATH,
+                                                        '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
+                    'src')
+                action_type = "tiktokpuzzle"
+                user_api_key = "532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN"
+                multipart_form_data = {
+                    'FULL_IMG_CAPTCHA': (None, full_img_captcha),
+                    'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
+                    'ACTION': (None, action_type),
+                    'USER_KEY': (None, user_api_key)
+                }
+                data = await solve_captcha_async(multipart_form_data)
+                await slide_button(data=data, driver=driver)
             else:
-                logging.info("Another kind captcha")
+                logging.info("Another captcha")
                 raise TypeError
         else:
-            pass
+            logging.info("Captcha not available")
 
     except json.JSONDecodeError:
         driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div/div[4]/div/a[1]').click()
@@ -119,10 +134,10 @@ async def login(driver, username: str, password: str):
     submit_button.click()
 
     logging.info("Button clicked!")
-    await asyncio.sleep(2)
 
     try:
-        await find_captcha(driver)
+        await asyncio.sleep(60)
+        # await find_captcha(driver)
     except TypeError:
         raise TypeError
 
@@ -137,9 +152,7 @@ async def login(driver, username: str, password: str):
         try:
             session_id = driver.get_cookie('sessionid').get('value')
             logging.info(f"You are logged in: {session_id}")
+            return session_id
         except Exception as e:
             logging.error(e)
-            driver.refresh()
-            await login(driver, username, password)
-        else:
-            return session_id
+            raise TypeError
