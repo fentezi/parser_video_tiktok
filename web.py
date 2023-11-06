@@ -7,6 +7,7 @@ import psutil
 import telebot
 from selenium import webdriver
 from selenium_stealth import stealth
+import undetected_chromedriver as uc
 
 from upload_video.login import login
 from upload_video.post_video import posting_video
@@ -36,16 +37,15 @@ async def process_video(number_pc: int) -> dict:
     for line in lines:
         await asyncio.sleep(2)
         username, password = line.strip().split(';')
-        options = webdriver.ChromeOptions()
+        options = uc.ChromeOptions()
         options.add_argument("--no-sandbox")
         options.add_argument("--incognito")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        options.add_experimental_option('useAutomationExtension', False)
-        options.add_experimental_option("detach", True)
-        options.add_argument("--headless")
+        # options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        # options.add_experimental_option("excludeSwitches", ["enable-logging"])
+        # options.add_experimental_option('useAutomationExtension', False)
+        # options.add_argument("--headless")
         options.add_argument("--mute-audio")
-        driver = webdriver.Chrome(options=options)
+        driver = uc.Chrome(use_subprocess=False, options=options)
         stealth(
             driver,
             languages=["en-US", "en"],
