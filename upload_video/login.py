@@ -14,7 +14,7 @@ logging.basicConfig(filename="login.app", filemode="w+", level=logging.INFO)
 
 
 async def random_sleep():
-    sleep_time = random.uniform(0.1, 2.0)
+    sleep_time = random.uniform(0.1, 1.0)
     await asyncio.sleep(sleep_time)
 
 
@@ -35,7 +35,8 @@ async def slide_button(data, driver):
     actions = ActionChains(driver)
     await asyncio.sleep(1)
     actions.click_and_hold(captcha).perform()
-    for _ in range(number):
+    actions.move_by_offset(xoffset=number - 5, yoffset=0).perform()
+    for _ in range(5):
         actions.move_by_offset(xoffset=1, yoffset=0).perform()
     actions.release().perform()
 
@@ -110,7 +111,7 @@ async def login(driver, username: str, password: str):
 
     except NoSuchElementException:
         pass
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located(
         (By.XPATH, username_xpath)))
 
     username_field = driver.find_element("xpath", username_xpath)
@@ -128,7 +129,7 @@ async def login(driver, username: str, password: str):
         WebDriverWait(driver, 3).until(EC.presence_of_element_located(
             (By.XPATH, submit_button_xpath)))
     except NoSuchElementException as e:
-        raise TypeError(e)
+        raise TypeError
 
     submit_button = driver.find_element("xpath", submit_button_xpath)
     submit_button.click()
@@ -136,8 +137,7 @@ async def login(driver, username: str, password: str):
     logging.info("Button clicked!")
 
     try:
-        await asyncio.sleep(60)
-        # await find_captcha(driver)
+        await find_captcha(driver)
     except TypeError:
         raise TypeError
 
@@ -147,7 +147,7 @@ async def login(driver, username: str, password: str):
         error = driver.find_element('xpath',
                                     '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
         logging.error("Authorisation Error: ", error)
-        raise ValueError(error)
+        raise TypeError
     except NoSuchElementException:
         try:
             session_id = driver.get_cookie('sessionid').get('value')
