@@ -1,10 +1,11 @@
+import asyncio
 import logging
 import os
 import random
 import time
-from upload_video.tiktok_uploader import uploadVideo
 from typing import Any
-import asyncio
+
+from upload_video.tiktok_uploader import uploadVideo
 
 
 def get_text_description():
