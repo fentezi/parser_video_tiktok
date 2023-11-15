@@ -4,7 +4,7 @@ import re
 from TikTokApi import TikTokApi
 
 ms_tokens = [
-    'mZ6R-dP4XEbRlthkD97XGYHw4p3r7ZVUN7VrV3llMnbWcSARKApy24l-kOBAoswUqqLCpmVMz8nccJ3NWIWsavPCJGfL6SuuIkRC2Vw1jj9NcpggTuJVXiuirHvkT6b4mQY-zgH_HE2OxG4=',
+    'nphIV8jzYoBTvgxZHOY3KB6PFDWSYPy9zV8jpdmWDtoGvlsSKGJ2ZcZ8aln_wKOGVNMPPy_rSg_59k9SzHOKtNQMLCHtR3mpoZcm2l6Xz6S1foF2LuLoTiaHN_zYcmuKIIAEN1p6QqntwTU=',
 ]
 
 
@@ -70,3 +70,5 @@ async def info_videos(file_url: str,
                     return e
 
         return sorted(result, key=lambda x: x[2], reverse=True)
+
+print(asyncio.run(info_videos("temp_uploads/account.txt", 2)))

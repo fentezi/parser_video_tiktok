@@ -8,7 +8,7 @@ from typing import Any
 from upload_video.tiktok_uploader import uploadVideo
 
 
-def get_text_description():
+def get_text_description() -> list:
     with open('description.txt', 'r', encoding='utf8') as f:
         lines = f.readlines()
     return lines
@@ -26,14 +26,14 @@ async def publish_video(session_id: str) -> bool:
     return video_info
 
 
-async def send_message(message: str, bot):
-    bot.send_message(chat_id='1944331333', text=message)
+async def send_message(message: str, bot: Any) -> None:
+    bot.send_message(chat_id='641487267', text=message)
     logging.info(message)
 
 
 async def posting_video(session_id: str, bot: Any,
                         sleep_time: float, username: str,
-                        number_pc: int, count_publish: int):
+                        number_pc: int, count_publish: int) -> None:
     video_folder = 'video'
     video_files = os.listdir(video_folder)
     video_count = len(video_files)
@@ -47,8 +47,12 @@ async def posting_video(session_id: str, bot: Any,
             message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}.'
             await send_message(message, bot)
     else:
-        for _ in range(count_publish):
+        for x in range(count_publish):
             video_info = await publish_video(session_id)
+            if x == count_publish - 1:
+                message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин'
+                await send_message(message, bot)
+                break
             message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}. Следующая публикация через 10 сек'
             await send_message(message, bot)
             await asyncio.sleep(10)
