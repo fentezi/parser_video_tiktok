@@ -43,6 +43,7 @@ share/python-wheels/
 *.egg
 .otput
 MANIFEST
+/.mypy_cache/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
