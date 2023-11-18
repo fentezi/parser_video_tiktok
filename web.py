@@ -22,7 +22,8 @@ bot = telebot.TeleBot(
 
 
 async def kill_all_chrome_processes() -> None:
-    chrome_procs = [proc for proc in psutil.process_iter(['pid', 'name']) if 'chrome.exe' in proc.info['name']]
+    chrome_procs = [proc for proc in psutil.process_iter(['pid', 'name']) if
+                    'chrome.exe' in proc.name()]
 
     try:
         for proc in chrome_procs:
