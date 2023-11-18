@@ -84,7 +84,7 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
                 try:
                     logging.info("Browser open")
                     session_id = await login(driver=driver,
-                                             username=username,
+                                             username=usernam,
                                              password=password)
                 except ValueError as e:
                     logging.error(f"{username}: {e}")
