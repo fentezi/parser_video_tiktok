@@ -39,7 +39,6 @@ async def kill_all_chrome_processes() -> None:
         logging.info(f"An unexpected error occurred: {e}")
 
 
-
 async def process_video(number1: int, number2: int, number_pc: int, count_video: int) -> None:
     with open("accounts.txt", "r", encoding="utf-8") as file:
         lines = file.read().strip().splitlines()
@@ -84,7 +83,7 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
                 try:
                     logging.info("Browser open")
                     session_id = await login(driver=driver,
-                                             username=usernam,
+                                             username=username,
                                              password=password)
                 except ValueError as e:
                     logging.error(f"{username}: {e}")
