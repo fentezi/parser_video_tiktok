@@ -40,6 +40,14 @@ async def kill_all_chrome_processes() -> None:
 
 
 async def process_video(number1: int, number2: int, number_pc: int, count_video: int) -> None:
+    """
+    Запуск процесса загрузки видео
+    :param number1:
+    :param number2:
+    :param number_pc:
+    :param count_video:
+    :return: None
+    """
     with open("accounts.txt", "r", encoding="utf-8") as file:
         lines = file.read().strip().splitlines()
 
