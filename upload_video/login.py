@@ -46,7 +46,7 @@ async def find_captcha(driver, i=0):
     try:
         while driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
             await asyncio.sleep(3)
-            if i != 10:
+            if i != 3:
                 if driver.find_element(By.XPATH,
                                        '//*[@id="captcha_container"]/div/div[1]/div[2]/div').text == "Drag the slider to fit the puzzle":
                     full_img_captcha = driver.find_element(By.XPATH,
