@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 from unittest.mock import patch, Mock
-from web import kill_all_chrome_processes
+from main import kill_all_chrome_processes
 import psutil
 
 

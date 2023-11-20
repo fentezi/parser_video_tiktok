@@ -33,7 +33,7 @@ async def info_videos(video_count: int):
 
     async with TikTokPy() as bot:
         result = []
-        with open('parser_account/account.txt', 'r', encoding='utf8') as file:
+        with open('parser_account/accounts.txt', 'r', encoding='utf8') as file:
             for line in file.readlines():
                 line = line.strip()
                 match = re.search(r'@([^/]+)', line)
@@ -66,5 +66,5 @@ async def html_code(list_result: list):
     )
     template = env.get_template('index.html')
     render_page = template.render(list_result=list_result)
-    with open('templates/result.html', 'w', encoding='utf8') as file:
+    with open('result.html', 'w', encoding='utf8') as file:
         file.write(render_page)

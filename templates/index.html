@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Результат</title>
+    <style>
+        body {
+            background-image: url("https://html5book.ru/wp-content/uploads/2015/07/background39.png");
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        a {
+            text-decoration: none;
+            display: flex;
+            flex-direction: column; /* Сделать контейнер блочным и выстроить элементы вертикально */
+            align-items: center; /* Центрировать элементы по горизонтали */
+            background-color: #fff;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        a:hover {
+            transform: translateY(-5px);
+        }
+
+        p {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+            color: #333;
+        }
+
+        .views {
+            font-size: 16px;
+            color: #777;
+            margin-top: auto;
+        }
+
+        .comment {
+            font-size: 16px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+{% if list_result is iterable %}
+<h2 style="text-align: center">Top {{list_result|length}}</h2>
+{% for index in list_result %}
+<a href="https://www.tiktok.com/@{{ index[0] }}/video/{{ index[1]}}">
+    <p>{{index[0]}}</p>
+    <p class="views">Просмотры: {{index[2]}}</p>
+    <!-- Add the Comment section here -->
+    {% if index[3] != "" %}
+    <p class="comment">Комментарий: {{index[3]}}</p>
+    {% endif %}
+</a>
+{% endfor %}
+{% else %}
+<p>No results to display.</p>
+{% endif %}
+</body>
+</html>

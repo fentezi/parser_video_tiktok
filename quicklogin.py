@@ -1,6 +1,6 @@
 import asyncio
 
-from tiktokpy import TikTokPy
+from tiktokpy import TikTokPy  # type: ignore
 
 
 async def main():

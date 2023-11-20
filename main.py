@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import traceback
-from parser_account.main import info_videos, html_code
 
 import psutil
 import telebot  # type: ignore
@@ -13,6 +12,7 @@ from selenium_stealth import stealth  # type: ignore
 from urllib3.exceptions import MaxRetryError
 from webdriver_manager.chrome import ChromeDriverManager
 
+from parser_account.parser import info_videos, html_code
 from upload_video.login import login
 from upload_video.post_video import posting_video
 
@@ -50,7 +50,7 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
     :param count_video:
     :return: None
     """
-    with open("accounts.txt", "r", encoding="utf-8") as file:
+    with open("upload_video/accounts.txt", "r", encoding="utf-8") as file:
         lines = file.read().strip().splitlines()
 
     while len(os.listdir('video')) != 0:
