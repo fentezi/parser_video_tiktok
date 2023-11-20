@@ -1,30 +1,24 @@
-import asyncio
 import re
 
-from TikTokApi import TikTokApi
-
-ms_tokens = [
-    'nphIV8jzYoBTvgxZHOY3KB6PFDWSYPy9zV8jpdmWDtoGvlsSKGJ2ZcZ8aln_wKOGVNMPPy_rSg_59k9SzHOKtNQMLCHtR3mpoZcm2l6Xz6S1foF2LuLoTiaHN_zYcmuKIIAEN1p6QqntwTU=',
-]
+import jinja2
+from tiktokpy import TikTokPy
 
 
-async def fetch_video_max_view(api: TikTokApi, username: str,
+async def fetch_video_max_view(api: TikTokPy, username: str,
                                video_count: int,
                                comment: str) \
         -> list[tuple[str, str, int, str]]:
     """Fetch max views of videos for a TikTok user."""
     result = []
-    async for video in api.user(username=username).videos(count=video_count):
-        video_stats = video.stats['playCount']
-        view = video_stats
-        video_url = video.id
+    user_feed_items = await api.user_feed(username=username, amount=video_count)
+    for item in user_feed_items:
+        view = item.stats.plays
+        video_url = item.video.id
         result.append((username, video_url, view, comment))
-        await asyncio.sleep(2.5)
     return result
 
 
-async def info_videos(file_url: str,
-                      video_count: int):
+async def info_videos(video_count: int):
     """Fetch and print the max views of videos for TikTok
      users listed in a file.
 
@@ -36,16 +30,10 @@ async def info_videos(file_url: str,
     Returns:
         list
     """
-    if not file_url:
-        print('Выберите файл с аккаунтами!')
-        raise FileExistsError(file_url)
 
-    async with (TikTokApi() as api):
-
-        await api.create_sessions(
-            num_sessions=3, sleep_after=3, ms_tokens=ms_tokens)
+    async with TikTokPy() as bot:
         result = []
-        with open(file_url, 'r', encoding='utf8') as file:
+        with open('parser_account/account.txt', 'r', encoding='utf8') as file:
             for line in file.readlines():
                 line = line.strip()
                 match = re.search(r'@([^/]+)', line)
@@ -61,7 +49,7 @@ async def info_videos(file_url: str,
                     comment = params[1].strip() if len(params) > 1 else ''
 
                 try:
-                    view_all = await fetch_video_max_view(api=api,
+                    view_all = await fetch_video_max_view(api=bot,
                                                           username=username,
                                                           comment=comment,
                                                           video_count=video_count)
@@ -71,4 +59,12 @@ async def info_videos(file_url: str,
 
         return sorted(result, key=lambda x: x[2], reverse=True)
 
-print(asyncio.run(info_videos("temp_uploads/account.txt", 2)))
+
+async def html_code(list_result: list):
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader('templates')
+    )
+    template = env.get_template('index.html')
+    render_page = template.render(list_result=list_result)
+    with open('templates/result.html', 'w', encoding='utf8') as file:
+        file.write(render_page)

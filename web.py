@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import traceback
+from parser_account.main import info_videos, html_code
 
 import psutil
 import telebot  # type: ignore
@@ -141,7 +142,8 @@ async def start_script():
     script = int(input("Введите:\n1 для запуска парсера видео\n2 для запуска загрузчика видео: \n"))
     if script == 1:
         number = int(input("Введите количество видео для парсинга: "))
-        # await main.info_videos(number=number)
+        list_result = await info_videos(number)
+        await html_code(list_result=list_result)
     elif script == 2:
         number_pc = int(input("Введите номер ПК: "))
         count_video = int(input("Количество повторных публикаций: "))
