@@ -9,7 +9,7 @@ from upload_video.tiktok_uploader import uploadVideo
 
 
 def get_text_description() -> list:
-    with open('description.txt', 'r', encoding='utf8') as f:
+    with open('upload_video/description.txt', 'r', encoding='utf8') as f:
         lines = f.readlines()
     return lines
 
