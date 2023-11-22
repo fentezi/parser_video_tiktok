@@ -46,7 +46,7 @@ async def find_captcha(driver, i=0):
     try:
         while driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
             await asyncio.sleep(3)
-            if i != 3:
+            if i != 5:
                 if driver.find_element(By.XPATH,
                                        '//*[@id="captcha_container"]/div/div[1]/div[2]/div').text == "Drag the slider to fit the puzzle":
                     full_img_captcha = driver.find_element(By.XPATH,
@@ -132,11 +132,11 @@ async def login(driver, username: str, password: str, i: int = 0) -> str:
 
     await find_captcha(driver)
 
-    await asyncio.sleep(5)
+    await asyncio.sleep(3)
     try:
         error = driver.find_element("xpath",
                                     '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
-        if error == "Maximum number of attempts reached. Try again later.":
+        while error == "Maximum number of attempts reached. Try again later.":
             submit_button = driver.find_element("xpath", submit_button_xpath)
             submit_button.click()
 
@@ -150,7 +150,7 @@ async def login(driver, username: str, password: str, i: int = 0) -> str:
                 logging.info(f"You are logged in: {session_id}")
                 return session_id
             except Exception as e:
-                raise ValueError(error)
+                raise TypeError(e)
         else:
             raise ValueError(error)
     except NoSuchElementException:
