@@ -40,7 +40,8 @@ async def posting_video(session_id: str, bot: Any,
     if count_publish == 1:
         if video_count > 1:
             video_info = await publish_video(session_id)
-            message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин'
+            message = (f'#{number_pc}. {username}: {video_files[0]}: {video_info}.'
+                       f'Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин')
             await send_message(message, bot)
         elif video_count == 1:
             video_info = await publish_video(session_id)
@@ -50,10 +51,12 @@ async def posting_video(session_id: str, bot: Any,
         for x in range(count_publish):
             video_info = await publish_video(session_id)
             if x == count_publish - 1:
-                message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}. Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин'
+                message = (f'#{number_pc}. {username}: {video_files[0]}: {video_info}.'
+                           f' Следующая публикация через {time.strftime("%H:%M:%S", time.gmtime(sleep_time))} мин')
                 await send_message(message, bot)
                 break
-            message = f'#{number_pc}. {username}: {video_files[0]}: {video_info}. Следующая публикация через 10 сек'
+            message = (f'#{number_pc}. {username}: {video_files[0]}: {video_info}.'
+                       f' Следующая публикация через 10 сек')
             await send_message(message, bot)
             await asyncio.sleep(10)
     os.remove(f'{video_folder}/{video_files[0]}')
