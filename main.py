@@ -1,15 +1,17 @@
+import asyncio
 import logging
 import os
 import random
 import traceback
+from typing import List, Tuple
 
 import psutil
-import asyncio
 import telebot  # type: ignore
-import undetected_chromedriver as uc  # type: ignore
 from requests.exceptions import ConnectionError
+import undetected_chromedriver as uc  # type: ignore
+from selenium.webdriver.chrome.options import Options
 from selenium_stealth import stealth  # type: ignore
-from urllib3.exceptions import MaxRetryError
+from urllib3.exceptions import MaxRetryError  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager
 
 from parser_account.parser import info_videos, html_code
@@ -18,14 +20,13 @@ from upload_video.post_video import posting_video
 
 logging.basicConfig(filename='app.log', filemode='w', level=logging.INFO)
 
-bot = telebot.TeleBot(
-    token='6670999008:AAF45ZfcAUmu7MbyujGrbJjgLfoJe1FHit0')
+bot_token = '6670999008:AAF45ZfcAUmu7MbyujGrbJjgLfoJe1FHit0'
+bot = telebot.TeleBot(token=bot_token)
+unauthorized_accounts = []
 
 
 async def kill_all_chrome_processes() -> None:
-    chrome_procs = [proc for proc in psutil.process_iter(['pid', 'name']) if
-                    'chrome.exe' in proc.name()]
-
+    chrome_procs = [proc for proc in psutil.process_iter(['pid', 'name']) if 'chrome.exe' in proc.name()]
     try:
         for proc in chrome_procs:
             try:
@@ -41,13 +42,8 @@ async def kill_all_chrome_processes() -> None:
         logging.info(f"An unexpected error occurred: {e}")
 
 
-unauthorized_accounts = []
-
-
-async def start_chrome(username: str,
-                       password: str,
-                       number_pc: int) -> str:
-    options = uc.ChromeOptions()
+async def start_chrome(username: str, password: str, number_pc: int):
+    options = Options()
     options.add_argument("--incognito")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-application-cache")
@@ -56,125 +52,115 @@ async def start_chrome(username: str,
     options.add_argument("--mute-audio")
 
     try:
-        driver = uc.Chrome(options=options, headless=False,
-                           executable_path=ChromeDriverManager().install())
+        driver = uc.Chrome(options=options, executable_path=ChromeDriverManager().install(),
+                           headless=False)
     except (MaxRetryError, ConnectionError):
         await kill_all_chrome_processes()
         logging.info("Internet connection is down!")
         await asyncio.sleep(30)
     else:
         driver.maximize_window()
-        stealth(driver,
-                languages=["en-US", "en"],
-                vendor="Google Inc.",
-                platform="Win64",
-                webgl_vendor="Intel Inc.",
-                renderer="Intel Iris OpenGL Engine",
-                fix_hairline=True,
-                )
+        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win64",
+                webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)
         driver.get("https://www.tiktok.com/login/phone-or-email/email")
         try:
             logging.info("Browser open")
-            session_id = await login(driver=driver,
-                                     username=username,
-                                     password=password)
+            session_id = await login(driver=driver, username=username, password=password)
         except ValueError as e:
             logging.error(f"{username}: {e}")
             # bot.send_message(chat_id="641487267", text=f"{number_pc}. {username}: {e}")
-
         except TypeError as e:
             logging.error(f"{username}: {e}")
             unauthorized_accounts.append((username, password))
-
         except Exception as e:
             logging.error(e)
-            await kill_all_chrome_processes()
-
         else:
-            # bot.send_message(chat_id="641487267",
-            #                  text=f"#{number_pc}. Пользователь {username} авторизован!")
             return session_id
+        finally:
+            await kill_all_chrome_processes()
 
 
 async def process_video(number1: int, number2: int, number_pc: int, count_video: int) -> None:
-    with open("upload_video/accounts.txt", "r", encoding="utf-8") as file:
-        lines = file.read().strip().splitlines()
+    lines = read_account_file()
     for line in lines:
         await asyncio.sleep(2)
         try:
             username, password = line.split(';')
         except ValueError:
-            logging.error(f"#{number_pc}. Данная строка не соответствует шаблону: {line}")
-            # bot.send_message(chat_id="641487267",
-            #                  text=f"#{number_pc}. Данная строка не соответствует шаблону: {line}")
+            logging.error(f"#{number_pc}. Line does not match the template: {line}")
         else:
-            username = username.strip()
-            password = password.strip()
-            session_id = await start_chrome(username=username,
-                                            password=password,
-                                            number_pc=number_pc)
+            username, password = username.strip(), password.strip()
+            session_id = await start_chrome(username=username, password=password, number_pc=number_pc)
             sleep_time = random.randint(number1, number2) * 60
             try:
-                await post_video_and_sleep(session_id, bot,
-                                           sleep_time, username,
-                                           number_pc, count_video)
-                await kill_all_chrome_processes()
+                await post_video_and_sleep(session_id, bot, sleep_time, username, number_pc, count_video)
+
             except Exception as e:
                 logging.error(e)
+
+            finally:
                 await kill_all_chrome_processes()
 
 
 async def non_auth_account(number1: int, number2: int, number_pc: int, count_video: int,
-                           unauthorized_accounts: list) -> None:
-    accounts_without_authorization = list()
-    for _ in range(len(unauthorized_accounts)):
+                           unauthorized_account: List[Tuple[str, str]]) -> None:
+    un_acc = []
+    for _ in range(len(unauthorized_account)):
         await asyncio.sleep(2)
-        username, password = unauthorized_accounts.pop()
-        accounts_without_authorization.append((username, password))
-        session_id = await start_chrome(username=username,
-                                        password=password,
-                                        number_pc=number_pc)
-        accounts_without_authorization.pop()
+        username, password = unauthorized_account.pop()
+        un_acc.append((username, password))
+        session_id = await start_chrome(username=username, password=password, number_pc=number_pc)
+        un_acc.pop()
         sleep_time = random.randint(number1, number2) * 60
         try:
-            await post_video_and_sleep(session_id, bot,
-                                       sleep_time, username,
-                                       number_pc, count_video)
-            await kill_all_chrome_processes()
+            await post_video_and_sleep(session_id, bot, sleep_time, username, number_pc, count_video)
         except Exception as e:
             logging.error(e)
+        finally:
             await kill_all_chrome_processes()
-    write_unauthorized_accounts(accounts_without_authorization)
+    write_unauthorized_accounts(un_acc)
 
 
-async def get_video_process(number1: int,
-                            number2: int,
-                            number_pc: int,
-                            count_video: int):
-    print("Запускаем загрузку видео!")
-    await process_video(number1,
-                        number2,
-                        number_pc,
-                        count_video)
+async def get_video_process(number1: int, number2: int, number_pc: int, count_video: int) -> None:
+    print("Launching video uploader")
+    await process_video(number1, number2, number_pc, count_video)
     if unauthorized_accounts:
-        logging.info(f"#{number_pc}. Неавторизованные аккаунты: {unauthorized_accounts}")
-        await non_auth_account(number1,
-                               number2,
-                               number_pc,
-                               count_video,
-                               unauthorized_accounts)
-    logging.info(f"{number_pc}. Загрузка завершена!")
-    # bot.send_message(chat_id="641487267", text=f"#{number_pc}. Загрузка завершена!")
+        logging.info(f"#{number_pc}. Unauthorized accounts: {unauthorized_accounts}")
+        await non_auth_account(number1, number2, number_pc, count_video, unauthorized_accounts)
+    logging.info(f"#{number_pc}. Upload completed!")
 
 
-def read_account_file(file_path: str) -> list[str]:
-    with open(f"upload_video/{file_path}", "r", encoding="utf-8") as file:
+async def start_script():
+    script = int(input("Enter:\n1 to start video parser\n2 to start video uploader: \n"))
+    if script == 1:
+        number = int(input("Enter the number of videos to parse: "))
+        list_result = await info_videos(number)
+        html_code(list_result=list_result)
+    elif script == 2:
+        number_pc = int(input("Enter the PC number: "))
+        count_video = int(input("Number of reposts: "))
+        print("Enter the time range for publication (in minutes)")
+        number1 = int(input("From (in minutes): "))
+        number2 = int(input("To (in minutes): "))
+        try:
+            await get_video_process(number1, number2, number_pc, count_video)
+        except Exception as e:
+            logging.error(e)
+            logging.error(f"Traceback: {traceback.format_exc()}")
+            input("Press Enter to exit")
+    else:
+        print("Input error!")
+        return
+
+
+def read_account_file() -> List[str]:
+    with open("upload_video/accounts.txt", "r", encoding="utf-8") as file:
         lines = file.read().strip().splitlines()
     return lines
 
 
-def write_unauthorized_accounts(accounts: list[tuple[str, str]]) -> None:
-    with open("upload_video/unauthorized_accounts.txt", "r", encoding="utf-8") as file:
+def write_unauthorized_accounts(accounts: List[Tuple[str, str]]) -> None:
+    with open("upload_video/unauthorized_accounts.txt", "w", encoding="utf-8") as file:
         for username, password in accounts:
             file.write(f"{username};{password}\n")
 
@@ -190,31 +176,5 @@ async def post_video_and_sleep(session_id: str, bot, sleep_time: int, username: 
                             number_pc=number_pc, count_publish=count_video)
 
 
-async def start_script():
-    script = int(input("Введите:\n1 для запуска парсера видео\n2 для запуска загрузчика видео: \n"))
-    if script == 1:
-        number = int(input("Введите количество видео для парсинга: "))
-        list_result = await info_videos(number)
-        html_code(list_result=list_result)
-    elif script == 2:
-        number_pc = int(input("Введите номер ПК: "))
-        count_video = int(input("Количество повторных публикаций: "))
-        print("Введите диапазон времени для публикации (в минутах)")
-        number1 = int(input("От (в минутах): "))
-        number2 = int(input("До (в минутах): "))
-        try:
-            await get_video_process(number1,
-                                    number2,
-                                    number_pc,
-                                    count_video)
-        except Exception as e:
-            logging.error(e)
-            logging.error(f"Traceback: {traceback.format_exc()}")
-            input("Нажмите Enter для выхода")
-    else:
-        print("Ошибка ввода!")
-        return
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(start_script())
