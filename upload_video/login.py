@@ -57,9 +57,9 @@ async def find_captcha(driver, i=0):
                         'src')
                     action_type = 'tiktokcircle'
                 else:
-                    raise TypeError("Another captcha")
+                    raise TypeError("Другая капча")
             else:
-                raise TypeError("No more attempts left")
+                raise TypeError("Больше попыток не осталось")
 
             user_api_key = '532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN'
             multipart_form_data = {
@@ -84,19 +84,7 @@ async def login(driver, username: str, password: str) -> str:
     username_xpath = "//input[@placeholder='Email or username']"
     password_xpath = "//input[@placeholder='Password']"
     submit_button_xpath = "//button[@type='submit']"
-    click_go_email = "/html/body/div[1]/div/div[3]/div[1]/div/div[1]/div/div[1]/button[3]"
 
-    await asyncio.sleep(3)
-    try:
-        text_email = driver.find_element("xpath", click_go_email).text
-        if text_email == "Email / Username":
-            driver.find_element("xpath", click_go_email).click()
-        else:
-            driver.find_element("xpath",
-                                "/html/body/div[7]/div[3]/div/div/div[2]/div/div[1]/div/div[1]/button[2]").click()
-
-    except NoSuchElementException:
-        pass
     WebDriverWait(driver, 5).until(EC.presence_of_element_located(
         (By.XPATH, username_xpath)))
 
@@ -111,22 +99,22 @@ async def login(driver, username: str, password: str) -> str:
         password_field.send_keys(char)
         await random_sleep()
 
+    WebDriverWait(driver, 3).until(EC.presence_of_element_located(
+        (By.XPATH, submit_button_xpath)))
+
     try:
-        WebDriverWait(driver, 3).until(EC.presence_of_element_located(
-            (By.XPATH, submit_button_xpath)))
-    except NoSuchElementException as e:
-        raise TypeError(e)
+        submit_button = driver.find_element("xpath", submit_button_xpath)
+        submit_button.click()
+    except Exception:
+        pass
 
-    submit_button = driver.find_element("xpath", submit_button_xpath)
-    submit_button.click()
-
-    logging.info("Button clicked!")
+    logging.info("Кнопка нажата!")
 
     await find_captcha(driver)
 
-    await asyncio.sleep(3)
     try:
         for _ in range(3):
+            await asyncio.sleep(5)
             error = driver.find_element("xpath",
                                         '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
 
@@ -134,11 +122,7 @@ async def login(driver, username: str, password: str) -> str:
                 submit_button = driver.find_element("xpath", submit_button_xpath)
                 submit_button.click()
 
-                logging.info("Button clicked!")
-
                 await find_captcha(driver)
-
-                await asyncio.sleep(5)
             else:
                 raise ValueError(error)
         try:

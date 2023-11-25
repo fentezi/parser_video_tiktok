@@ -59,4 +59,5 @@ async def posting_video(session_id: str, bot: Any,
                        f' Следующая публикация через 10 сек')
             await send_message(message, bot)
             await asyncio.sleep(10)
+    await asyncio.sleep(sleep_time)
     os.remove(f'{video_folder}/{video_files[0]}')
