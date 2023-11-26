@@ -4,7 +4,7 @@ import random
 
 import asyncio
 import aiohttp
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -24,7 +24,6 @@ async def solve_captcha_async(multipart_form_data: dict) -> Any:
     async with aiohttp.ClientSession() as session:
         async with session.post(url=url, data=multipart_form_data) as response:
             data = await response.json(content_type='text/html')
-            logging.info(data)
             return data
 
 
@@ -41,43 +40,37 @@ async def slide_button(data: Any, driver):
     actions.release().perform()
 
 
-async def find_captcha(driver, i=0):
+async def find_captcha(driver, i=5):
     await asyncio.sleep(5)
     try:
-        while driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
-            await asyncio.sleep(3)
-            if i != 5:
-                if driver.find_element(By.XPATH,
-                                       '//*[@id="captcha_container"]/div/div[1]/div[2]/div').text == "Drag the slider to fit the puzzle":
-                    full_img_captcha = driver.find_element(By.XPATH,
-                                                           '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
-                        'src')
-                    small_img_captcha = driver.find_element(By.XPATH,
-                                                            '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
-                        'src')
-                    action_type = 'tiktokcircle'
-                else:
-                    raise TypeError("Другая капча")
+        if i != 0:
+            if driver.find_element(By.XPATH,
+                                   '//*[@id="captcha_container"]/div/div[1]/div[2]/div').text == "Drag the slider to fit the puzzle":
+                full_img_captcha = driver.find_element(By.XPATH,
+                                                       '//*[@id="captcha_container"]/div/div[2]/img[1]').get_attribute(
+                    'src')
+                small_img_captcha = driver.find_element(By.XPATH,
+                                                        '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
+                    'src')
+                action_type = 'tiktokcircle'
             else:
-                raise TypeError("Больше попыток не осталось")
-
-            user_api_key = '532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN'
-            multipart_form_data = {
-                'FULL_IMG_CAPTCHA': (None, full_img_captcha),
-                'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
-                'ACTION': (None, action_type),
-                'USER_KEY': (None, user_api_key)
-            }
-            data = await solve_captcha_async(multipart_form_data)
-            await slide_button(data=data, driver=driver)
+                raise TypeError("Другой вид капчи!")
         else:
-            logging.info("Captcha is not displayed")
+            raise TypeError("Попыток на авторизацию больше нет!")
+
+        user_api_key = '532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN'
+        multipart_form_data = {
+            'FULL_IMG_CAPTCHA': full_img_captcha,
+            'SMALL_IMG_CAPTCHA': small_img_captcha,
+            'ACTION': action_type,
+            'USER_KEY': user_api_key
+        }
+        data = await solve_captcha_async(multipart_form_data)
+        await slide_button(data=data, driver=driver)
 
     except json.JSONDecodeError:
         driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div/div[4]/div/a[1]').click()
-        await find_captcha(driver, i + 1)
-    except NoSuchElementException:
-        pass
+        await find_captcha(driver, i - 1)
 
 
 async def login(driver, username: str, password: str) -> str:
@@ -102,35 +95,47 @@ async def login(driver, username: str, password: str) -> str:
     WebDriverWait(driver, 3).until(EC.presence_of_element_located(
         (By.XPATH, submit_button_xpath)))
 
-    try:
-        submit_button = driver.find_element("xpath", submit_button_xpath)
-        submit_button.click()
-    except Exception:
-        pass
+    submit_button = driver.find_element("xpath", submit_button_xpath)
+    submit_button.click()
 
     logging.info("Кнопка нажата!")
 
-    await find_captcha(driver)
-
     try:
-        for _ in range(3):
-            await asyncio.sleep(5)
-            error = driver.find_element("xpath",
-                                        '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, '//*[@id="captcha_container"]/div'))
+        )
+        await find_captcha(driver)
+    except TimeoutException:
+        logging.info("Капчи нет!")
 
-            if error == "Maximum number of attempts reached. Try again later.":
-                submit_button = driver.find_element("xpath", submit_button_xpath)
-                submit_button.click()
+    await asyncio.sleep(3)
+    try:
+        error = driver.find_element("xpath",
+                                    '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
 
-                await find_captcha(driver)
-            else:
-                raise ValueError(error)
+        if error == "Maximum number of attempts reached. Try again later.":
+            submit_button = driver.find_element("xpath", submit_button_xpath)
+            submit_button.click()
+            await asyncio.sleep(3)
+            try:
+                if driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
+                    try:
+                        await find_captcha(driver)
+                    except TypeError as e:
+                        raise TypeError(e)
+            except NoSuchElementException:
+                logging.info("Капчи нет!")
+        else:
+            raise ValueError(error)
+
+        await asyncio.sleep(5)
         try:
             session_id = driver.get_cookie("sessionid").get("value")
             logging.info(f"You are logged in: {session_id}")
             return session_id
-        except Exception as e:
-            raise TypeError(e)
+        except Exception:
+            raise TypeError(error)
+
     except NoSuchElementException:
         try:
             session_id = driver.get_cookie("sessionid").get("value")
