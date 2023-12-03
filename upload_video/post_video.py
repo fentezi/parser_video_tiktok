@@ -27,7 +27,7 @@ async def publish_video(session_id: str) -> bool:
 
 
 async def send_message(message: str, bot: Any) -> None:
-    bot.send_message(chat_id='1944331333', text=message)
+    bot.send_message(chat_id='641487267', text=message)
     logging.info(message)
 
 

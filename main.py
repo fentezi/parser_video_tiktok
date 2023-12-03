@@ -58,9 +58,9 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
         try:
             username, password = line.split(';')
         except ValueError:
-            logging.error(f"#{number_pc}. Данная строка не соответствует шаблону: {line}")
-            bot.send_message(chat_id="1944331333",
-                             text=f"#{number_pc}. Данная строка не соответствует шаблону: {line}")
+            logging.error(f"#{number_pc}. Строка не соответствует шаблону: {line}")
+            bot.send_message(chat_id="641487267",
+                             text=f"#{number_pc}. Строка не соответствует шаблону: {line}")
         else:
             username = username.strip()
             password = password.strip()
@@ -72,10 +72,10 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--mute-audio")
             try:
-                driver = uc.Chrome(options=options, headless=False,
+                driver = uc.Chrome(options=options, headless=True,
                                    executable_path=ChromeDriverManager().install())
             except (MaxRetryError, ConnectionError):
-                logging.info("Internet connection is down!")
+                logging.info("Интернет-соединение не работает!")
                 await asyncio.sleep(30)
             else:
                 driver.maximize_window()
@@ -89,21 +89,24 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
                         )
                 driver.get("https://www.tiktok.com/login/phone-or-email/email")
                 try:
-                    logging.info("Browser open")
+                    logging.info("Браузер открыт!")
                     session_id = await login(driver=driver,
                                              username=username,
                                              password=password)
                 except ValueError as e:
                     logging.error(f"#{number_pc}. {username}: {e}")
-                    bot.send_message(chat_id="1944331333", text=f"{number_pc}. {username}: {e}")
+                    bot.send_message(chat_id="641487267", text=f"{number_pc}. {username}: {e}")
                 except TypeError as e:
                     logging.error(f"#{number_pc}. {username}: {e}")
                     unauthorized_accounts.add((username, password))
 
+                except Exception as e:
+                    logging.info(e)
+
                 else:
-                    logging.info(f"#{number_pc}. Пользователь {username} авторизован!")
-                    bot.send_message(chat_id="1944331333",
-                                     text=f"#{number_pc}. Пользователь {username} авторизован!")
+                    logging.info(f"#{number_pc}. Пользователь {username} прошел авторизацию!")
+                    bot.send_message(chat_id="641487267",
+                                     text=f"#{number_pc}. Пользователь {username} прошел авторизацию!")
                     sleep_time = random.randint(number1, number2) * 60
                     try:
                         if len(os.listdir('video')) == 1:
@@ -138,10 +141,10 @@ async def login_unauthorized_accounts(unauthorized_accounts: set[tuple[str, str]
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--mute-audio")
         try:
-            driver = uc.Chrome(options=options, headless=False,
+            driver = uc.Chrome(options=options, headless=True,
                                executable_path=ChromeDriverManager().install())
         except (MaxRetryError, ConnectionError):
-            logging.info("Internet connection is down!")
+            logging.info("Интернет-соединение не работает!")
             await asyncio.sleep(30)
         else:
             driver.maximize_window()
@@ -155,21 +158,25 @@ async def login_unauthorized_accounts(unauthorized_accounts: set[tuple[str, str]
                     )
             driver.get("https://www.tiktok.com/login/phone-or-email/email")
             try:
-                logging.info("Browser open")
+                logging.info("Браузер открыт!")
                 session_id = await login(driver=driver,
                                          username=username,
                                          password=password)
             except ValueError as e:
                 logging.error(f"#{number_pc}. {username}: {e}")
-                bot.send_message(chat_id="1944331333", text=f"{number_pc}. {username}: {e}")
+                bot.send_message(chat_id="641487267", text=f"{number_pc}. {username}: {e}")
 
             except TypeError as e:
                 logging.error(f"#{number_pc}. {username}: {e}")
 
+            except Exception as e:
+                logging.info(e)
+
             else:
                 successful_accounts.add((username, password))
-                bot.send_message(chat_id="1944331333",
-                                 text=f"#{number_pc}. Пользователь {username} авторизован!")
+                logging.info(f"#{number_pc}. Пользователь {username} прошел авторизацию!")
+                bot.send_message(chat_id="641487267",
+                                 text=f"#{number_pc}. Пользователь {username} прошел авторизацию!")
                 sleep_time = random.randint(number1, number2) * 60
                 try:
                     if len(os.listdir('video')) == 1:
@@ -192,6 +199,7 @@ async def login_unauthorized_accounts(unauthorized_accounts: set[tuple[str, str]
         finally:
             await kill_all_chrome_processes()
 
+
 async def get_video_process(number1: int, number2: int, number_pc: int, count_video: int) -> None:
     print("Запуск загрузчика видео")
     await process_video(number1, number2, number_pc, count_video)
@@ -205,18 +213,20 @@ async def get_video_process(number1: int, number2: int, number_pc: int, count_vi
                 unauthorized_accounts.symmetric_difference_update(successful_accounts)
                 for username, password in unauthorized_accounts:
                     file.write(f"{username};{password}\n")
+    logging.info(f"#{number_pc}. Загрузка видео завершена!")
+    bot.send_message(chat_id="641487267", text=f"#{number_pc}. Загрузка видео завершена!")
 
 
 async def start_script():
-    script = int(input("Введите:\n1 для запуска парсера видео\n2 для запуска загрузчика видео: \n"))
+    script = int(input("Введите:\n1, чтобы запустить анализатор видео\n2, чтобы начать загрузку видео: \n"))
     if script == 1:
-        number = int(input("Введите количество видео для парсинга: "))
+        number = int(input("Введите количество видео для анализа: "))
         list_result = await info_videos(number)
         await html_code(list_result=list_result)
     elif script == 2:
         number_pc = int(input("Введите номер ПК: "))
-        count_video = int(input("Количество повторных публикаций: "))
-        print("Введите диапазон времени для публикации (в минутах)")
+        count_video = int(input("Количество репостов: "))
+        print("Введите временной диапазон публикации (в минутах)")
         number1 = int(input("От (в минутах): "))
         number2 = int(input("До (в минутах): "))
         try:

@@ -180,3 +180,6 @@ cython_debug/
 
 /login.app
 /output/
+/settings.toml
+/upload_video/unauthorized_accounts.txt
+/video/*.mp4

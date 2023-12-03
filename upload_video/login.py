@@ -1,15 +1,16 @@
+import asyncio
 import json
 import logging
 import random
+from typing import Any
 
-import asyncio
 import aiohttp
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from typing import Any
+from urllib3.exceptions import ReadTimeoutError, TimeoutError
 
 logging.basicConfig(filename="login.app", filemode="w+", level=logging.INFO, encoding="utf-8")
 
@@ -40,7 +41,7 @@ async def slide_button(data: Any, driver):
     actions.release().perform()
 
 
-async def find_captcha(driver, i=5):
+async def find_captcha(driver, i=8):
     await asyncio.sleep(5)
     try:
         if i != 0:
@@ -53,24 +54,27 @@ async def find_captcha(driver, i=5):
                                                         '//*[@id="captcha_container"]/div/div[2]/img[2]').get_attribute(
                     'src')
                 action_type = 'tiktokcircle'
-            else:
-                raise TypeError("Другой вид капчи!")
         else:
             raise TypeError("Попыток на авторизацию больше нет!")
 
-        user_api_key = '532RJWjTxCmbPMgK74kNLAM5mhJptFtRIrVpDN'
+        user_api_key = 'obgtGU7fmOVfIzDPtUpRFm9v05CVIEG0zNeJAU'
         multipart_form_data = {
-            'FULL_IMG_CAPTCHA': full_img_captcha,
-            'SMALL_IMG_CAPTCHA': small_img_captcha,
-            'ACTION': action_type,
-            'USER_KEY': user_api_key
+            'FULL_IMG_CAPTCHA': (None, full_img_captcha),
+            'SMALL_IMG_CAPTCHA': (None, small_img_captcha),
+            'ACTION': (None, action_type),
+            'USER_KEY': (None, user_api_key)
         }
         data = await solve_captcha_async(multipart_form_data)
+        logging.info(f"Информация о капче: {data}")
         await slide_button(data=data, driver=driver)
+    except NoSuchElementException:
+        raise TypeError("Другой вид капчи!")
 
     except json.JSONDecodeError:
         driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div/div[4]/div/a[1]').click()
         await find_captcha(driver, i - 1)
+    except (ReadTimeoutError, TimeoutError):
+        raise TypeError("Отсутствует интернет!")
 
 
 async def login(driver, username: str, password: str) -> str:
@@ -108,7 +112,7 @@ async def login(driver, username: str, password: str) -> str:
     except TimeoutException:
         logging.info("Капчи нет!")
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
     try:
         error = driver.find_element("xpath",
                                     '//*[@id="loginContainer"]/div[1]/form/div[3]/span').text
@@ -119,10 +123,7 @@ async def login(driver, username: str, password: str) -> str:
             await asyncio.sleep(3)
             try:
                 if driver.find_element(By.XPATH, '//*[@id="captcha_container"]/div').is_displayed():
-                    try:
-                        await find_captcha(driver)
-                    except TypeError as e:
-                        raise TypeError(e)
+                    await find_captcha(driver)
             except NoSuchElementException:
                 logging.info("Капчи нет!")
         else:
