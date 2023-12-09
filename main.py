@@ -72,8 +72,8 @@ async def process_video(number1: int, number2: int, number_pc: int, count_video:
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--mute-audio")
             try:
-                driver = uc.Chrome(options=options, headless=True,
-                                   executable_path=ChromeDriverManager().install())
+                driver = uc.Chrome(options=options, headless=False,
+                                   executable_path=ChromeDriverManager().install(), version_main=120)
             except (MaxRetryError, ConnectionError):
                 logging.info("Интернет-соединение не работает!")
                 await asyncio.sleep(30)
@@ -142,7 +142,7 @@ async def login_unauthorized_accounts(unauthorized_accounts: set[tuple[str, str]
         options.add_argument("--mute-audio")
         try:
             driver = uc.Chrome(options=options, headless=True,
-                               executable_path=ChromeDriverManager().install())
+                               executable_path=ChromeDriverManager().install(), version_main=120)
         except (MaxRetryError, ConnectionError):
             logging.info("Интернет-соединение не работает!")
             await asyncio.sleep(30)
